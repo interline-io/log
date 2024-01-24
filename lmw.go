@@ -13,31 +13,39 @@ import (
 func LoggingMiddleware(longQueryDuration int, getUserName func(context.Context) string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := r.Context()
-			t1 := time.Now()
+			// Setup context logger
+			// Add username
+			rlog := Logger.With()
+			if getUserName != nil {
+				if u := getUserName(r.Context()); u != "" {
+					rlog = rlog.Str("user", getUserName(r.Context()))
+				}
+			}
+			// Add request ID
+			// TODO
+			rlogger := rlog.Logger()
+			r = r.WithContext(WithLogger(r.Context(), rlogger))
 
 			// Get request body for logging if request is json and length under 20kb
+			t1 := time.Now()
 			var body []byte
 			if r.Header.Get("content-type") == "application/json" && r.ContentLength < 1024*20 {
 				body, _ = io.ReadAll(r.Body)
 				r.Body = io.NopCloser(bytes.NewBuffer(body))
 			}
+
 			// Wrap context to get error code and errors
 			wr := wrapResponseWriter(w)
 			next.ServeHTTP(wr, r)
+
 			// Extra logging of request body if duration > 1s
 			durationMs := (time.Now().UnixNano() - t1.UnixNano()) / 1e6
-			msg := Info().
+			msg := rlogger.Info().
 				Int64("duration_ms", durationMs).
 				Str("method", r.Method).
 				Str("path", r.URL.EscapedPath()).
 				Str("query", r.URL.Query().Encode()).
 				Int("status", wr.status)
-
-			// Add username
-			if getUserName != nil {
-				msg = msg.Str("user", getUserName(ctx))
-			}
 
 			// Add duration info
 			if durationMs > int64(longQueryDuration) {
