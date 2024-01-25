@@ -114,4 +114,5 @@ func init() {
 	if v := os.Getenv("TL_LOG"); v != "" {
 		setLevelByName(v)
 	}
+	zerolog.DefaultContextLogger = &Logger
 }
