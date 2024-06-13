@@ -11,7 +11,11 @@ import (
 
 // Zerolog
 
-var Logger = zerolog.New(os.Stderr).With().Timestamp().Logger()
+var Logger = zerolog.New(os.Stderr).With().Timestamp().Logger().Level(zerolog.TraceLevel)
+
+func With() zerolog.Context {
+	return Logger.With()
+}
 
 func Fatal() *zerolog.Event {
 	return Logger.Info()
@@ -33,8 +37,11 @@ func Trace() *zerolog.Event {
 	return Logger.Trace()
 }
 
-func With() zerolog.Context {
-	return Logger.With()
+// TraceCheck checks if the log level is trace before evaluating the anon fn
+func Tracefn(fn func()) {
+	if Logger.GetLevel() == zerolog.TraceLevel {
+		fn()
+	}
 }
 
 // Zerolog simple wrappers
@@ -76,43 +83,38 @@ func Print(fmts string, args ...interface{}) {
 // SetLevel sets the log level.
 func SetLevel(lvalue zerolog.Level) {
 	zerolog.SetGlobalLevel(lvalue)
-	Infof("Set global log value to %s", lvalue)
+	jsonLog := os.Getenv("TL_LOG_JSON") == "true"
+	Logger = zerolog.New(os.Stderr).With().Timestamp().Logger().Level(lvalue)
+	if !jsonLog {
+		// use console logging
+		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+		output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
+		output.FormatLevel = func(i interface{}) string {
+			return strings.ToUpper(fmt.Sprintf("[%-5s]", i))
+		}
+		Logger = Logger.Output(output)
+	}
+	zerolog.DefaultContextLogger = &Logger
+	Tracef("Set global log value to %s", lvalue)
 }
 
 // setLevelByName sets the log level by string name.
-func setLevelByName(lstr string) {
+func getLevelByName(lstr string) zerolog.Level {
 	switch strings.ToUpper(lstr) {
 	case "FATAL":
-		SetLevel(zerolog.FatalLevel)
+		return zerolog.FatalLevel
 	case "ERROR":
-		SetLevel(zerolog.ErrorLevel)
+		return zerolog.ErrorLevel
 	case "INFO":
-		SetLevel(zerolog.InfoLevel)
+		return zerolog.InfoLevel
 	case "DEBUG":
-		SetLevel(zerolog.DebugLevel)
+		return zerolog.DebugLevel
 	case "TRACE":
-		SetLevel(zerolog.TraceLevel)
+		return zerolog.TraceLevel
 	}
-}
-
-func setConsoleLogger() {
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
-	output.FormatLevel = func(i interface{}) string {
-		return strings.ToUpper(fmt.Sprintf("[%-5s]", i))
-	}
-	Logger = zerolog.New(os.Stderr).With().Timestamp().Logger().Output(output).Level(zerolog.TraceLevel)
+	return zerolog.InfoLevel
 }
 
 func init() {
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	if os.Getenv("TL_LOG_JSON") == "true" {
-		// use json logging
-	} else {
-		setConsoleLogger()
-	}
-	if v := os.Getenv("TL_LOG"); v != "" {
-		setLevelByName(v)
-	}
-	zerolog.DefaultContextLogger = &Logger
+	SetLevel(getLevelByName(os.Getenv("TL_LOG")))
 }
