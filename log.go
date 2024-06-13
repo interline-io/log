@@ -38,7 +38,7 @@ func Trace() *zerolog.Event {
 }
 
 // TraceCheck checks if the log level is trace before evaluating the anon fn
-func Tracefn(fn func()) {
+func TraceCheck(fn func()) {
 	if Logger.GetLevel() == zerolog.TraceLevel {
 		fn()
 	}
