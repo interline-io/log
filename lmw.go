@@ -13,18 +13,21 @@ import (
 func LoggingMiddleware(longQueryDuration int, getUserName func(context.Context) string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Setup context logger
+			// Get context logger
+			ctx := r.Context()
+			rlog := For(ctx).With()
+
 			// Add username
-			rlog := Logger.With()
 			if getUserName != nil {
-				if u := getUserName(r.Context()); u != "" {
-					rlog = rlog.Str("user", getUserName(r.Context()))
+				if u := getUserName(ctx); u != "" {
+					rlog = rlog.Str("user", getUserName(ctx))
 				}
 			}
-			// Add request ID
-			// TODO
+
+			// Set as context logger
 			rlogger := rlog.Logger()
-			r = r.WithContext(WithLogger(r.Context(), rlogger))
+			ctx = WithLogger(ctx, rlogger)
+			r = r.WithContext(ctx)
 
 			// Get request body for logging if request is json and length under 20kb
 			t1 := time.Now()
