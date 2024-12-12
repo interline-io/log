@@ -7,9 +7,34 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/interline-io/log/internal/middleware"
 )
 
-// log request and duration
+// Copy of chi request id middleware
+func RequestIDMiddleware(next http.Handler) http.Handler {
+	return middleware.RequestID(next)
+}
+
+// Glue between chi RequestID and Zerolog
+func RequestIDLoggingMiddleware(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		rlog := For(ctx).
+			With().
+			Str("request_id", middleware.GetReqID(ctx)).Logger()
+		next.ServeHTTP(w, r.WithContext(WithLogger(ctx, rlog)))
+	}
+	return http.HandlerFunc(fn)
+}
+
+// Log request and duration
+// Renamed from LoggingMiddleware
+func DurationLoggingMiddleware(longQueryDuration int, getUserName func(context.Context) string) func(http.Handler) http.Handler {
+	return LoggingMiddleware(longQueryDuration, getUserName)
+}
+
+// Log request and duration
 func LoggingMiddleware(longQueryDuration int, getUserName func(context.Context) string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
