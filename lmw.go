@@ -50,8 +50,7 @@ func LoggingMiddleware(longQueryDuration int, getUserName func(context.Context) 
 			}
 
 			// Set as context logger
-			rlogger := rlog.Logger()
-			ctx = WithLogger(ctx, rlogger)
+			ctx = WithLogger(ctx, rlog.Logger())
 			r = r.WithContext(ctx)
 
 			// Get request body for logging if request is json and length under 20kb
@@ -68,7 +67,9 @@ func LoggingMiddleware(longQueryDuration int, getUserName func(context.Context) 
 
 			// Extra logging of request body if duration > 1s
 			durationMs := (time.Now().UnixNano() - t1.UnixNano()) / 1e6
-			msg := rlogger.Info().
+
+			// Get logger from context again in case it was modified
+			msg := For(ctx).Info().
 				Int64("duration_ms", durationMs).
 				Str("method", r.Method).
 				Str("path", r.URL.EscapedPath()).
