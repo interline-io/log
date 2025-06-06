@@ -16,6 +16,11 @@ func RequestIDMiddleware(next http.Handler) http.Handler {
 	return middleware.RequestID(next)
 }
 
+// Re-export GetReqID for use outside the internal package
+func GetReqID(ctx context.Context) string {
+	return middleware.GetReqID(ctx)
+}
+
 // Glue between chi RequestID and Zerolog
 func RequestIDLoggingMiddleware(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
