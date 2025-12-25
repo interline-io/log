@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog"
+	"golang.org/x/term"
 )
 
 // Zerolog
@@ -88,7 +89,11 @@ func SetLevel(lvalue zerolog.Level) {
 	if !jsonLog {
 		// use console logging
 		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-		output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
+		output := zerolog.ConsoleWriter{
+			Out:        os.Stdout,
+			TimeFormat: time.RFC3339,
+			NoColor:    !term.IsTerminal(int(os.Stdout.Fd())),
+		}
 		output.FormatLevel = func(i interface{}) string {
 			return strings.ToUpper(fmt.Sprintf("[%-5s]", i))
 		}

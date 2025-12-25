@@ -1,11 +1,12 @@
 module github.com/interline-io/log
 
-go 1.20
+go 1.24.0
 
 require github.com/rs/zerolog v1.31.0
 
 require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
-	golang.org/x/sys v0.12.0 // indirect
+	golang.org/x/sys v0.39.0 // indirect
+	golang.org/x/term v0.38.0 // indirect
 )
