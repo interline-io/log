@@ -19,7 +19,7 @@ func With() zerolog.Context {
 }
 
 func Fatal() *zerolog.Event {
-	return Logger.Info()
+	return Logger.Fatal()
 }
 
 func Info() *zerolog.Event {
