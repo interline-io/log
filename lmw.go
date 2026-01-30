@@ -80,7 +80,7 @@ func LoggingMiddleware(longQueryDuration int, getUserName func(context.Context) 
 				Str("path", r.URL.EscapedPath()).
 				Str("query", r.URL.Query().Encode()).
 				Int("status", wr.status).
-				Int("response_size", wr.size)
+				Int64("response_size", wr.size)
 
 			// Add duration info
 			if durationMs > int64(longQueryDuration) {
@@ -101,7 +101,7 @@ func LoggingMiddleware(longQueryDuration int, getUserName func(context.Context) 
 // written HTTP status code and response size to be captured for logging.
 type responseWriter struct {
 	status      int
-	size        int
+	size        int64
 	wroteHeader bool
 	http.ResponseWriter
 }
@@ -128,6 +128,6 @@ func (rw *responseWriter) Write(response []byte) (int, error) {
 		rw.wroteHeader = true
 	}
 	n, err := rw.ResponseWriter.Write(response)
-	rw.size += n
+	rw.size += int64(n)
 	return n, err
 }
