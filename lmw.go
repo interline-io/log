@@ -79,7 +79,8 @@ func LoggingMiddleware(longQueryDuration int, getUserName func(context.Context) 
 				Str("method", r.Method).
 				Str("path", r.URL.EscapedPath()).
 				Str("query", r.URL.Query().Encode()).
-				Int("status", wr.status)
+				Int("status", wr.status).
+				Int64("response_size", wr.size)
 
 			// Add duration info
 			if durationMs > int64(longQueryDuration) {
@@ -97,9 +98,10 @@ func LoggingMiddleware(longQueryDuration int, getUserName func(context.Context) 
 
 // https://blog.questionable.services/article/guide-logging-middleware-go/
 // responseWriter is a minimal wrapper for http.ResponseWriter that allows the
-// written HTTP status code to be captured for logging.
+// written HTTP status code and response size to be captured for logging.
 type responseWriter struct {
 	status      int
+	size        int64
 	wroteHeader bool
 	http.ResponseWriter
 }
@@ -125,5 +127,7 @@ func (rw *responseWriter) Write(response []byte) (int, error) {
 		rw.status = http.StatusOK
 		rw.wroteHeader = true
 	}
-	return rw.ResponseWriter.Write(response)
+	n, err := rw.ResponseWriter.Write(response)
+	rw.size += int64(n)
+	return n, err
 }
