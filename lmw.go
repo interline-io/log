@@ -131,3 +131,10 @@ func (rw *responseWriter) Write(response []byte) (int, error) {
 	rw.size += int64(n)
 	return n, err
 }
+
+// Unwrap exposes the underlying writer so http.ResponseController can navigate
+// past this wrapper to find Flusher / Hijacker / etc. on the original writer.
+// Without this, SSE handlers downstream lose Flush() and can't stream.
+func (rw *responseWriter) Unwrap() http.ResponseWriter {
+	return rw.ResponseWriter
+}
