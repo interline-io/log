@@ -45,6 +45,21 @@ func TraceCheck(fn func()) {
 	}
 }
 
+// queryLogging gates per-query database logging. It is off by default so enabling
+// TRACE-level logging doesn't flood with one line per query; set TL_LOG_QUERIES=true
+// (or call SetLogQueries) to turn it on.
+var queryLogging = os.Getenv("TL_LOG_QUERIES") == "true"
+
+// LogQueries reports whether per-query database logging is enabled (TL_LOG_QUERIES).
+func LogQueries() bool {
+	return queryLogging
+}
+
+// SetLogQueries enables or disables per-query database logging at runtime.
+func SetLogQueries(v bool) {
+	queryLogging = v
+}
+
 // Zerolog simple wrappers
 
 // Error for notable errors.
